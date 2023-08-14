@@ -1,7 +1,38 @@
+from copy import deepcopy
+
 class Player:
     def __init__(self, name):
         self.name = name
         self.score = 0
+
+    def set_score(self, score):
+        self.score = score
+
+class GameState:
+    def __init__(self, players):
+        self.players = deepcopy(players)  # Deepcopy to copy the list of Player objects
+
+def validate_cards(cards):
+    # Existing cards in the game
+    valid_cards = ['f', '1h', '21'] + [str(i) for i in range(1, 21)] + ['r', 'd', 'c', 'v']
+    
+    # Check if each card is valid and count occurrences of each card
+    card_counts = {}
+    for card in cards:
+        if card not in valid_cards:
+            return False, f"'{card}' is not a recognized card."
+        
+        card_counts[card] = card_counts.get(card, 0) + 1
+        
+        # Ensure no numbered card (1-10) appears more than 5 times
+        if card.isnumeric() and int(card) <= 10 and card_counts[card] > 5:
+            return False, f"'{card}' appears more than 5 times."
+        
+        # Ensure cards 11-21, '1h', 'f', '21', and face cards, appear only once
+        if card in ['f', '1h', '21', 'r', 'd', 'c', 'v'] or (card.isnumeric() and int(card) > 10) and card_counts[card] > 1:
+            return False, f"'{card}' appears more than once."
+            
+    return True, ""
 
 def calculate_score(cards, bid):
     honor_card_values = {'f': 4.5, '1h': 4.5, '21': 4.5}
@@ -61,9 +92,18 @@ def main():
     player_names = ["Michael", "Joe", "Devin", "Seth"]
     players = [Player(name) for name in player_names]
 
+    # List to hold game states, works as a stack
+    game_states = []  
+
     # Play the rounds
-    for i in range(num_rounds):
-        print(f"\nRound {i+1}")
+    round_counter = 0
+    while round_counter < num_rounds:
+        print(f"\nRound {round_counter + 1}")
+
+        # Save the current game state before making changes
+        current_state = GameState(players)
+        game_states.append(current_state)
+
         taker_index = int(input("Enter the index (0-3) of the player who is the taker for this round: "))
         taker = players[taker_index]
 
@@ -78,6 +118,12 @@ def main():
 
         cards = input("Enter the cards won by the taker this round, separated by spaces (e.g. r d 3 10): ").lower().split()
 
+        valid, error_message = validate_cards(cards)
+        while not valid:
+            print(f"Invalid card input: {error_message}")
+            cards = input("Enter the cards won by the taker this round, separated by spaces (e.g. r d 3 10): ").lower().split()
+            valid, error_message = validate_cards(cards)
+
         score_won = calculate_score(cards, bid)
         taker.score += score_won * 3
 
@@ -87,6 +133,14 @@ def main():
             if j != taker_index:
                 player.score -= score_won
                 print(f"{player.name}'s total score is now {player.score}.")
+
+        undo_input = input("Do you want to undo this round? (y/n): ")
+        if undo_input.lower() == 'y' and game_states:
+            last_state = game_states.pop()  # Get the last saved state
+            players = last_state.players  # Restore players from the saved state
+            print("Round undone. Please re-enter details for this round.")
+            continue  # Jump to the beginning of the loop
+        round_counter += 1  # Only increment if round is not undone
 
 if __name__ == "__main__":
     main()
