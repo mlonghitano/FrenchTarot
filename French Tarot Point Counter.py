@@ -28,9 +28,13 @@ def validate_cards(cards):
         if card.isnumeric() and int(card) <= 10 and card_counts[card] > 5:
             return False, f"'{card}' appears more than 5 times."
         
-        # Ensure cards 11-21, '1h', 'f', '21', and face cards, appear only once
-        if card in ['f', '1h', '21', 'r', 'd', 'c', 'v'] or (card.isnumeric() and int(card) > 10) and card_counts[card] > 1:
+        # Ensure cards 11-21, '1h', 'f', and '21' appear only once
+        if card in ['f', '1h', '21'] or (card.isnumeric() and int(card) > 10) and card_counts[card] > 1:
             return False, f"'{card}' appears more than once."
+        
+        # Ensure face cards appear at most 4 times
+        if card in ['r', 'd', 'c', 'v'] and card_counts[card] > 4:
+            return False, f"'{card}' appears more than 4 times."
             
     return True, ""
 
@@ -104,7 +108,16 @@ def main():
         current_state = GameState(players)
         game_states.append(current_state)
 
-        taker_index = int(input("Enter the index (0-3) of the player who is the taker for this round: "))
+        while True:
+            try:
+                taker_index = int(input("Enter the index (0-3) of the player who is the taker for this round: "))
+                if taker_index in [0, 1, 2, 3]:
+                    break
+                else:
+                    print("Invalid input! Please enter a number between 0 and 3.")
+            except ValueError:
+                print("Invalid input! Please enter a number between 0 and 3.")
+
         taker = players[taker_index]
 
         bid = input("Enter the bid (small, guard, guard without, guard against): ").lower()
