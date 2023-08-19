@@ -29,7 +29,7 @@ def validate_cards(cards):
             return False, f"'{card}' appears more than 5 times."
         
         # Ensure cards 11-21, '1h', 'f', and '21' appear only once
-        if card in ['f', '1h', '21'] or (card.isnumeric() and int(card) > 10) and card_counts[card] > 1:
+        if (card in ['f', '1h', '21'] and card_counts[card] > 1) or (card.isnumeric() and int(card) > 10 and card_counts[card] > 1):
             return False, f"'{card}' appears more than once."
         
         # Ensure face cards appear at most 4 times
@@ -89,12 +89,32 @@ def calculate_score(cards, bid):
     return score if points >= points_threshold else -score
 
 def main():
-    # Get the number of rounds
-    num_rounds = int(input("Enter the number of rounds: "))
+    # Get the number of players (3 or 4)
+    while True:
+        try:
+            num_players = int(input("Enter the number of players (3 or 4): "))
+            if num_players in [3, 4]:
+                break
+            else:
+                print("Invalid input! Please enter either 3 or 4.")
+        except ValueError:
+            print("Invalid input! Please enter either 3 or 4.")
 
     # Initialize players
-    player_names = ["Michael", "Joe", "Devin", "Seth"]
+    player_names = []
+    for i in range(num_players):
+        player_name = input(f"Enter the name of player {i+1}: ")
+        player_names.append(player_name)
+
+    # Ensure entered names match number of players
+    while len(set(player_names)) != num_players:
+        print(f"You entered {len(set(player_names))} unique names but indicated there would be {num_players} players.")
+        player_names = [input(f"Enter the name of player {i+1}: ") for i in range(num_players)]
+
     players = [Player(name) for name in player_names]
+
+    # Get the number of rounds
+    num_rounds = int(input("Enter the number of rounds: "))
 
     # List to hold game states, works as a stack
     game_states = []  
@@ -110,22 +130,27 @@ def main():
 
         while True:
             try:
-                taker_index = int(input("Enter the index (0-3) of the player who is the taker for this round: "))
-                if taker_index in [0, 1, 2, 3]:
+                taker_index = int(input(f"Enter the index (0-{num_players-1}) of the player who is the taker for this round: "))
+                if taker_index in range(num_players):
                     break
                 else:
-                    print("Invalid input! Please enter a number between 0 and 3.")
+                    print(f"Invalid input! Please enter a number between 0 and {num_players-1}.")
             except ValueError:
-                print("Invalid input! Please enter a number between 0 and 3.")
+                print(f"Invalid input! Please enter a number between 0 and {num_players-1}.")
 
         taker = players[taker_index]
 
+        bid_options = ["small", "guard", "guard without", "guard against"]
+
         bid = input("Enter the bid (small, guard, guard without, guard against): ").lower()
+        while bid not in bid_options:
+            print("Invalid input! Please enter a valid bid type (small, guard, guard without, guard against).")
+            bid = input("Enter the bid (small, guard, guard without, guard against): ").lower()
 
         if bid == "small" or bid == "guard":
             print("Reminder: Please add the points from the middle cards to your final score.")
         elif bid == "guard without":
-            print("Reminder: You will not see the middle cards but their points will be added to your final score.")
+            print("Reminder: You will not see the middle cards, and their points will be omitted from all final scores.")
         elif bid == "guard against":
             print("Reminder: You will not see the middle cards and their points will be given to your opponents.")
 
