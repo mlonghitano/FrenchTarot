@@ -130,13 +130,15 @@ def main():
 
         while True:
             try:
-                taker_index = int(input(f"Enter the index (0-{num_players-1}) of the player who is the taker for this round: "))
-                if taker_index in range(num_players):
+                taker_number = int(input(f"Which player number (1-{num_players}) is going to be the taker for this round? "))
+                taker_index = taker_number - 1
+                if 1 <= taker_number <= num_players:
                     break
                 else:
-                    print(f"Invalid input! Please enter a number between 0 and {num_players-1}.")
+                    print(f"Invalid input! Please enter a number between 1 and {num_players}.")
             except ValueError:
-                print(f"Invalid input! Please enter a number between 0 and {num_players-1}.")
+                print(f"Invalid input! Please enter a number between 1 and {num_players}.")
+
 
         taker = players[taker_index]
 
