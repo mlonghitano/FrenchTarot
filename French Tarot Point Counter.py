@@ -38,7 +38,7 @@ def validate_cards(cards):
             
     return True, ""
 
-def calculate_score(cards, bid):
+def calculate_score(cards, bid, num_players):
     honor_card_values = {'f': 4.5, '1h': 4.5, '21': 4.5}
     face_card_values = {'r': 4.5, 'd': 3.5, 'c': 2.5, 'v': 1.5}
     other_card_values = {str(i): 0.5 for i in range(1, 21)}
@@ -68,9 +68,15 @@ def calculate_score(cards, bid):
     handful_bonus = 0
     handful_input = input("Handful bonus? (y/n): ")
     if handful_input.lower() == 'y':
-        handful_cards = int(input("How many cards? (10, 13, or 15): "))
-        handful_bonus_values = {10: 20, 13: 30, 15: 40}
-        handful_bonus = handful_bonus_values[handful_cards] if handful_cards in handful_bonus_values else 0
+        if num_players == 3:
+            handful_bonus_values = {10: 20, 13: 30, 15: 40}
+        elif num_players == 4:
+            handful_bonus_values = {10: 20, 13: 30, 15: 40}
+        elif num_players == 5:
+            handful_bonus_values = {8: 20, 10: 30, 13: 40}
+        
+        handful_cards = int(input(f"How many cards? {list(handful_bonus_values.keys())}: "))
+        handful_bonus = handful_bonus_values.get(handful_cards, 0)
 
     slam_bonus = 0
     slam_input = input("Slam Bonus? (y/n): ")
@@ -88,17 +94,36 @@ def calculate_score(cards, bid):
     score = (25 + points_difference + petit_bonus) * bid_multiplier[bid] + slam_bonus + handful_bonus
     return score if points >= points_threshold else -score
 
+def distribute_scores_five_players(players, taker_index, partner_index, score_won):
+    for j, player in enumerate(players):
+        if j == taker_index or j == partner_index:
+            player.score += round(score_won / 2, 1)
+            print(f"{player.name} scored {round(score_won / 2, 1)} points this round. Their total score is now {player.score}.")
+        else:
+            player.score -= round(score_won / 3, 1)
+            print(f"{player.name}'s total score is now {player.score}.")
+
 def main():
-    # Get the number of players (3 or 4)
+    # Get the number of players (3, 4, or 5)
     while True:
         try:
-            num_players = int(input("Enter the number of players (3 or 4): "))
-            if num_players in [3, 4]:
+            num_players = int(input("Enter the number of players (3, 4, or 5): "))
+            if num_players in [3, 4, 5]:
                 break
             else:
-                print("Invalid input! Please enter either 3 or 4.")
+                print("Invalid input! Please enter 3, 4, or 5.")
         except ValueError:
-            print("Invalid input! Please enter either 3 or 4.")
+            print("Invalid input! Please enter 3, 4, or 5.")
+
+    # Asking for the called king when num_players is 5
+    called_king = None
+    if num_players == 5:
+        while True:
+            called_king = input("Enter the called king (r, d, c, v): ").lower()
+            if called_king in ['r', 'd', 'c', 'v']:
+                break
+            else:
+                print("Invalid input! Please enter r, d, c, or v for the king.")
 
     # Initialize players
     player_names = []
@@ -164,8 +189,27 @@ def main():
             cards = input("Enter the cards won by the taker this round, separated by spaces (e.g. r d 3 10): ").lower().split()
             valid, error_message = validate_cards(cards)
 
-        score_won = calculate_score(cards, bid)
-        taker.score += score_won * 3
+        score_won = calculate_score(cards, bid, num_players)
+         # Check if 5 players game
+        if num_players == 5:
+            # Ask which player had the called king or queen (could be the taker himself)
+            while True:
+                try:
+                    partner_number = int(input(f"Which player number (1-{num_players}) had the called king or queen? "))
+                    if 1 <= partner_number <= num_players:
+                        partner_index = partner_number - 1
+                        break
+                    else:
+                        print(f"Invalid input! Please enter a number between 1 and {num_players}.")
+                except ValueError:
+                    print(f"Invalid input! Please enter a number between 1 and {num_players}.")
+
+            # Distribute scores for 5 players game
+            distribute_scores_five_players(players, taker_index, partner_index, score_won)
+        elif num_players == 3:
+            taker.score =+ score_won * 2
+        else:
+            taker.score += score_won * 3
 
         print(f"\n{taker.name} scored {score_won * 3} points this round. Their total score is now {taker.score}.")
 
